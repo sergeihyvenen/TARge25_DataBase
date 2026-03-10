@@ -142,3 +142,4 @@ select * from Person where (City = 'Gotham' or City = 'New York')
 --kes elavad Gothamis ja New Yorkis ja on vanemad, kui 29
 select * from Person where (City = 'Gotham' or City = 'New York')
 and Age >=30
+
