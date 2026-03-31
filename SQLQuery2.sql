@@ -4,7 +4,7 @@ create database TARge25
 use master
 
 --db kustutamine
-drop database TARge25
+drop database AdventureWorksDW2019
 
 --tabeli tegemine
 create table Gender
@@ -440,3 +440,291 @@ select PM.Name as ProductModel, P.Name as Product
 from SalesLT.Product P
 left join SalesLT.ProductModel PM
 on PM.ProductModelId = P.ProductModelId
+
+--rida 412
+--4 tund
+--31.03.26
+select ISNULL('Sinu Nimi', 'No Manager') as Manager
+
+select coalesce(null, 'No Manager') as Manager
+
+--Neil kellel ei ole ülemust, siis paneb neile No Manager teksti
+select E.Name as Employee, ISNULL(M.Name, 'No Manager') as Manager
+from Employees E
+left join Employees M
+on E.ManagerId = M.Id
+
+--kui Expression on õige, siis paneb väärtuse, mida soovid või
+--vastasel juhul paneb No Manager teksti
+case when Expression Then '' else '' end
+
+--teeme päringu, kus kasutame case-i
+--tuleb kasutada ka left koin
+select E.Name as Employee,
+case
+When M.Name is null then 'No manager'
+else M.Name End as Manager
+from Employees E
+left join Employees M
+on E.ManagerId = M.Id
+
+--lisame tabelisse uued veerud
+alter table Employees
+add MiddleName nvarchar(30)
+alter table Employees
+add LastName nvarchar(30)
+
+--muudame veeru nime koodiga
+sp_rename 'Employees.MiddleName1', 'Middlename'
+select* from Employees
+UPDATE Employees SET
+FirstName = 'Tom',
+MiddleName = 'Nick',
+LastName = 'Jones',
+ManagerId = NULL
+WHERE Id = 1;
+
+UPDATE Employees SET
+FirstName = 'Pam',
+MiddleName = NULL,
+LastName = 'Anderson',
+ManagerId = 1
+WHERE Id = 2;
+
+UPDATE Employees SET
+FirstName = 'John',
+MiddleName = NULL,
+LastName = NULL,
+ManagerId = 1
+WHERE Id = 3;
+
+UPDATE Employees SET
+FirstName = 'Sam',
+MiddleName = NULL,
+LastName = 'Smith',
+ManagerId = 2
+WHERE Id = 4;
+
+UPDATE Employees SET
+FirstName = NULL,
+MiddleName = 'Todd',
+LastName = 'Someone',
+ManagerId = 2
+WHERE Id = 5;
+
+UPDATE Employees SET
+FirstName = 'Ben',
+MiddleName = 'Ten',
+LastName = 'Sven',
+ManagerId = 2
+WHERE Id = 6;
+
+UPDATE Employees SET
+FirstName = 'Sara',
+MiddleName = NULL,
+LastName = 'Connor',
+ManagerId = 3
+WHERE Id = 7;
+
+UPDATE Employees SET
+FirstName = 'Valarie',
+MiddleName = 'Balerine',
+LastName = NULL,
+ManagerId = 3
+WHERE Id = 8;
+
+UPDATE Employees SET
+FirstName = 'James',
+MiddleName = '007',
+LastName = 'Bond',
+ManagerId = 3
+WHERE Id = 9;
+
+UPDATE Employees SET
+FirstName = NULL,
+MiddleName = NULL,
+LastName = 'Crowe',
+ManagerId = 4
+WHERE Id = 10;
+
+--igast reast võtab esimesena mitte nulli väärtuse ja paneb Name veergu
+--kasutada coalesce
+
+SELECT ID,
+COALESCE(FirstName, MiddleName, LastName) AS Name
+FROM Employees;
+
+create table IndianCustomres
+(
+Id int identity(1,1),
+Name nvarchar(25),
+Email nvarchar(25)
+)
+
+create table UKCustomers
+(
+Id int identity(1,1),
+Name nvarchar(25),
+Email nvarchar(25)
+)
+
+insert into IndianCustomers (Name,Email)
+values ('Raj', 'R@R.com'),
+('Sam', 'S@S.com')
+
+insert into UKCustomers (Name,Email)
+values ('Ben', 'B@B.com'),
+('Sam', 'S@S.com')
+
+select * from IndianCustomres
+select * from UKCustomers
+
+--kasutate union all
+--kahe tabeli andmete vaatamiseks
+--näitab kõik read mõlemast tabelist
+SELECT Id, Name, Email
+FROM IndianCustomres
+UNION ALL
+SELECT Id, Name, Email
+FROM UKCustomers;
+--korduvate väärtuste eemaldamiseks kasutame unionit
+SELECT Id, Name, Email
+FROM IndianCustomres
+UNION
+SELECT Id, Name, Email
+FROM UKCustomers;
+--kuidas tulemust sorteerida nime järgi
+--kasutada union all-i
+SELECT Id, Name, Email
+FROM IndianCustomres
+UNION ALL
+SELECT Id, Name, Email
+FROM UKCustomers
+order by Name
+
+--stored procedure
+--salvestatud protseduurid on SQL-i koodid, mis on salvest
+--salvestanud andmebaasis ja mida saab käivitada,
+--et teha mingi kindel töö ära
+create procedure spGetEmployees	
+as begin
+select FirstName, Gender from Employees
+end
+
+--nüüd saame kasutada spGetEmployees-i
+spGetEmployees
+exec spGetEmployees
+execute spGetEmployees
+
+---
+create proc spGetEmployeesByGenderAndDepartment
+@Gender nvarchar(10),
+@DepartmentId int
+as begin
+	select FirstName, Gender, DepartmentId from Employees 
+	where Gender = @Gender and DepartmentId = @DepartmentId
+end
+--miks saab veateate
+spGetEmployeesByGenderAndDepartment
+--õige variant
+EXEC spGetEmployeesByGenderAndDepartment 
+    @Gender = 'Female',
+	@DepartmentId = 1
+--kuidas minna sp järjekorrast mööda parameetrite sisestamisel
+spGetEmployeesByGenderAndDepartment @DepartmentId = 1, 
+@Gender = 'Male'
+
+
+sp_help spGetEmployeesByGenderAndDepartment
+
+--muudame sp-d ja võti peale, et keegi teine 
+--peale teie ei saaks seda muuta
+alter proc spGetEmployeesByGenderAndDepartment
+@Gender nvarchar(10),
+@DepartmentId int
+with encryption --paneb võtme peale
+as begin
+	select FirstName, Gender, DepartmentId from Employees
+	where Gender = @Gender and DepartmentId = @DepartmentId
+end
+
+--uurige välja, mis on output parameeter ja kuidas seda kasutada
+create proc spGetEmployeeCountByGender
+@Gender nvarchar(10),
+--output on parameeter, mis võimalödab meil salvestada protseduuri
+--sees tehtud arvutuse tulemuse ja kasutada seda väljaspool protseduuri
+@EmployeeCount int output
+as begin
+	select @EmployeeCount = COUNT(Id) from Employees
+	where Gender = @Gender
+end
+
+--annab tulemuse, kus loendab ära nõutele vastavad read
+--prindib tulemuse, mis on parameetris @EmployeeCount
+declare @TotalCount int
+exec spGetEmployeesByGenderAndDepartment 'Female', @TotalCount out
+if(@TotalCount = 0)
+	print '@Totalcount is null'
+else
+	print '@TotalCount is not null'
+print @TotalCount
+
+--näitab ära, et mitu rida vastab nõuetele
+declare @TotalCount int
+execute spGetEmployeeCountByGender
+@EmployeeCount = @TotalCount out, @Gender = 'Male'
+print @TotalCount
+
+--sp sisu vaatamine
+sp_help spGetEmployeeCountByGender
+--tabeli info
+sp_help Employees
+--kui soovid sp teksti näha
+sp_helptext spGetEmployeeCountByGender
+
+--vaatame, millest sõltub see sp
+sp_depends spGetEmployeeCountByGender
+
+--
+CREATE PROCEDURE spGetNameById
+@Id int,
+@Name nvarchar(30) output
+as BEGIN
+	select @Id = Id, @Name = FirstName from Employees
+END
+
+--tahame näha kogu tabelite ridade arvu
+--count kasutada
+create procedure spTotalCount2
+@TotalCount int output
+as begin
+	select @TotalCount = COUNT(ID) from Employees
+end
+
+--same teada, et mitu rida on tabelis
+declare @TotalEmployees int
+execute spTotalCount2 @TotalEmployees output
+select @TotalEmployees
+
+--mis id all on keegi nime järgi
+create proc spGetIdByName1
+@Id int,
+@FirstName nvarchar(30) output
+as begin
+	select @FirstName = FirstName from Employees where @Id = Id
+end
+
+--annab tulemuse, kus id 1 real on keegi koos nimega
+declare @FirstName nvarchar(30)
+execute spGetIdByName1 1, @FirstName output
+print 'Name of the employee = ' + @FirstName
+
+---
+declare @FirstName nvarchar(30)
+execute spGetIdById 1, @FirstName output
+print 'Name of the employee = ' + @FirstName
+--ei anna tulemust, sest sp-s on loogika viga
+--sp-s on viga, sest @Id on parameeter,
+--mis on mõeldud selleks, et me saaksime sisestada id-d
+--ja saada nime, aga sp-s on loogika viga, sest see
+--üritab määrata @Id väärtuseks Id veeru väärtust, mis on vale
