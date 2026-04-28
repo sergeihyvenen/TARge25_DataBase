@@ -914,3 +914,852 @@ select month(getdate()) --annab tänase kuu nr
 select month('03/29/2026') -- annab
 select YEAR(getdate()) -- annab jooksva aasta nr
 select YEAR('03/29/2026') -- annab stringis oleva aasta nr
+
+--rida 841
+--tund 6
+--14.04.26
+
+select datename(day, '2026-04-07 12:00:05.056') --annab stringis oleva päeva nime
+select datename(weekday, '2026-04-07 12:00:05.056') --annab stringis oleva päeva nime
+select datename(month, '2026-04-07 12:00:05.056') -- annab stringis oleva kuu nime
+
+create table EmployeesWithDates
+(
+	Id nvarchar(2),
+	Name nvarchar(20),
+	DateOfBirth datetime
+)
+
+INSERT INTO EmployeesWithDates  (Id, Name, DateOfBirth)  
+VALUES (1, 'Sam', '1980-12-30 00:00:00.000');
+INSERT INTO EmployeesWithDates  (Id, Name, DateOfBirth)  
+VALUES (2, 'Pam', '1982-09-01 12:02:36.260');
+INSERT INTO EmployeesWithDates  (Id, Name, DateOfBirth)  
+VALUES (3, 'John', '1985-08-22 12:03:30.370');
+INSERT INTO EmployeesWithDates  (Id, Name, DateOfBirth)  
+VALUES (4, 'Sara', '1979-11-29 12:59:30.670');
+
+--kuidas võtta ühest veerust andmeid ja selle abil luua uued veerud
+select Name, DateOfBirth, Datename(weekday, DateOfBirth) as [Day],
+	   MONTH(DateOfBirth) as [Month], 
+	   DATENAME(month, DateOfBirth) as [MonthName],
+	   YEAR(DateOfBirth) as [Year]
+from EmployeesWithDates
+
+select DATEPART(weekday, '2026-04-07 12:00:05.056') -- annab stringis oleva päeva nr, kus 1 on pühapäev
+select DATEPART(month, '2026-04-07 12:00:05.056') -- annab stringis oleva kuu nr
+select DATENAME(week, '2026-04-07 12:00:05.056')
+select dateadd(day, 20, '2026-04-07 12:00:05.056') -- annab stringis oleva kuupäeva, mis on 20 päeva pärast
+select dateadd(day, -20, '2026-04-07 12:00:05.056') -- annab stringis oleva kuupäeva, mis on 20 päeva enne
+select datediff(month, '04/30/2025', '01/31/2026')
+select datediff(year, '04/30/2025', '01/31/2026')
+
+create function fnComputeAge(@DOB datetime)
+returns nvarchar(50)
+as begin
+	declare @tempdate datetime, @years int, @months int, @days int
+	select @tempdate = @DOB
+
+	select @years = datediff(year, @tempdate, getdate()) - case when (month(@DOB) > month(getdate())) or (month(@DOB))
+	= month(getdate()) and day(@DOB) > day(getdate()) then 1 else 0 end
+	select @tempdate = dateadd(year, @years, @tempdate)
+
+	select @months = datediff(month, @tempdate, getdate()) - case when day(@DOB) > day(getdate()) then 1 else 0 end
+	select @tempdate = dateadd(month, @months, @tempdate)
+
+	select @days = datediff(day, @tempdate, getdate())
+
+	declare @Age nvarchar(50)
+		set @Age = cast(@years as nvarchar(10)) + ' years, ' 
+		+ cast(@months as nvarchar(10)) + ' months, ' 
+		+ cast(@days as nvarchar(10)) + ' days old'
+	return @Age
+end
+
+--saame vanuse välja arvutada, kui kasutame fnComputeAge funktsiooni
+select Name, DateOfBirth, dbo.fnComputeAge(DateOfBirth) as Age 
+from EmployeesWithDates
+
+--kui kasutame seda funktsiooni, siis saame teada tänase päeva vahet
+--stringis olevaga
+select dbo.fnComputeAge('03/23/2008')
+
+--nr peale DOB muutujat näitab, 
+--et missugusena järjestuses me tahame näidata veeru sisu
+select Id, Name, DateOfBirth,
+convert(nvarchar,DateOfBirth, 109) as ConvertedDOB
+from EmployeesWithDates
+
+select Id, Name, Name + ' - ' + cast(Id as nvarchar) as [Name-Id]
+from EmployeesWithDates
+
+select cast(getdate() as date) --tänane kp
+select convert(date, getdate()) --tänane kp
+
+---matemaatilised funktsioonid
+select abs(-101.5) --absoluutväärtus, tagastab 101.5
+select ceiling(101.5) --tagastab 102, ümardab üles
+select CEILING(-101.5) --tagastab -101, ümardab üles positiivsema nr poole
+select floor(101.5) --tagastab 101, ümardab alla
+select floor(-101.5) --tagastab -102, ümardab alla negatiivsema nr poole 
+select power(2, 4) -- 2 astmel 4 e 2x2x2x2, esimene nr on alus
+select SQUARE(5) -- tagastab 25, võtab arvu ja korrutab iseendaga
+select sqrt(25) --tagastab 5, võtab arvu ja leiab selle ruutjuure
+
+select rand() --tagastab juhusliku arvu vahemikus 0 kuni 1
+--oleks vaja, et iga kord annab rand meile ühe täisarvu vahemikus 1 kuni 100
+select ceiling (rand() * 100)
+
+--annab juhuslik number vahemikus 1 kuni 1000
+--ja teeb seda 10 korda, et näha erinevaid numbreid
+declare @counter int
+set @counter = 1
+while (@counter <= 10)
+begin
+	print ceiling (rand() * 1000)
+	set @counter = @counter + 1
+end
+
+select ROUND(850.556, 2) --ümardab 850.556 kahe komakohani, tagastab 850.56
+select ROUND(850.556, 2, 1) --ümardab 850.556 kahe komakohani, 
+--aga kui kolmas komakoht on 5 või suurem, siis ümardab alla, 
+--tagastab 850.550
+select ROUND(850.556, 1) --ümardab 850.556 ühe komakohani, tagastab 850.6
+select ROUND(850.556, 1, 1)--ümardab 850.556 ühe komakohani, 
+--aga kui kolmas komakoht on 5 või suurem, siis ümardab alla, tagastab 850.5
+select ROUND(850.556, -2)--ümardab 850.556 sadade kaupa, tagastab 900
+select ROUND(850.556, -1)--ümardab 850.556 kümnete kaupa, tagastab 850
+
+create function dbo.CalculateAge (@DOB date)
+returns int
+as begin
+declare @Age int
+
+set @Age = datediff(year, @DOB, getdate()) -
+	case 
+		when (month(@DOB) > month(getdate())) or
+			 (month(@DOB) = month(getdate()) and day(@DOB) > day(getdate())) 
+		then 1 
+		else 0
+		end
+	return @Age
+end
+-----
+execute CalculateAge '10/25/1980'
+
+--arvutab v'lja, kui vana on isik ja v]tab arvesse, 
+--kas isiku sünnipäev on juba sel aastal olnud või mitte
+--antud juhul näitab, kes on üle 40 aasta vanad
+select Id, dbo.CalculateAge(DateOfBirth) as Age from EmployeesWithDates
+where dbo.CalculateAge(DateOfBirth) > 40
+
+---inline table valued functions
+--teha EmployeesWithDates tabelisse
+--uus veerg nimega DepartmentId int,
+-- ja teine veerg on Gender nvarchar(10)
+
+update EmployeesWithDates set Gender = 'Male', DepartmentId = 1
+where Id = 1
+update EmployeesWithDates set Gender = 'Female', DepartmentId = 2
+where Id = 2
+update EmployeesWithDates set Gender = 'Male', DepartmentId = 1
+where Id = 3
+update EmployeesWithDates set Gender = 'Female', DepartmentId = 3
+where Id = 4
+insert into EmployeesWithDates (Id, Name, DateOfBirth, DepartmentId, Gender)
+values (5, 'Todd', '1978-11-29 12:59:30.670', 1, 'Male')
+
+select * from EmployeesWithDates
+
+--scalar function e skaleeritav funktsioon annab mingis vahemikus olevaid
+--väärtusi, aga inline table valued function tagastab tabeli
+--ja seal ei kasutata begin ja endi vahele kirjutamist, 
+--vaid lihtsalt kirjutad selecti
+create function fn_EmployeesByGender(@Gender nvarchar(10))
+returns table
+as
+return (select Id, Name, DateOfBirth, DepartmentId, Gender
+		from EmployeesWithDates
+		where Gender = @Gender)
+
+--soovime vaadata kõiki naisi EmployeesWithDates tabelist
+select * from fn_EmployeesByGender('Female')
+
+--soovin ainult näha Pam ja kasutan funktsiooni fn_EmployeesByGender
+select * from fn_EmployeesByGender('Female')
+where Name = 'Pam'
+
+--kahest erinevast tabelist andmete võtmine ja koos kuvamine
+--esimene on funktsioon ja teine on Department tabel
+select Name, Gender, DepartmentName
+from fn_EmployeesByGender('Male') E
+join Department D on D.Id = E.DepartmentId
+
+--inline funktsioon
+create function fn_GetEmployees()
+returns table as
+return (select Id, Name, cast(DateOfBirth as date)
+		as DOB
+		from EmployeesWithDates)
+
+select * from fn_GetEmployees()
+
+
+--multi statement table valued function
+create function fn_MS_GetEmployees()
+returns @Table Table (Id int, Name nvarchar(20), DOB date)
+as begin
+	insert into @Table
+	select Id, Name, cast(DateOfBirth as date) from EmployeesWithDates
+
+	return
+end
+
+select * from fn_MS_GetEmployees()
+
+--inline tabeli funktsioonid on paremini töötamas 
+--kuna käsitletakse vaatena
+--multi statement table valued funktsioonid on nagu tavalised funktsioonid,
+--pm on tegemist stored procedurega ja see võib olla aeglasem, 
+--sest see ei saa kasutada vaate optimeerimist e kulutab rohkem ressurssi
+select * from EmployeesWithDates
+update fn_GetEmployees() set Name = 'Sara' where Id = 4 --saab muuta andmeid
+select * from EmployeesWithDates
+update fn_MS_GetEmployees() set Name = 'Sara' where Id = 4 
+--ei saa muuta andmeid multistate table valued funktsioonis, 
+--sest see on nagu stored procedure
+
+--rida 1045
+--tund 7
+--21.04.26
+
+--determnistic vs nondeterministic functions
+select count(*) from EmployeesWithDates
+--kõik tehtemärgid on deterministic, sest nad annavad alati sama tulemuse, 
+--kui sisend on sama. Selle alla kuuluvad veel sum, avg, min, max, count
+select square(3)
+
+--mitte ettemääratud funktsioonid võivad anda erinevaid tulemusi
+select getdate() --kuna see annab alati jooksva aja, siis on nondeterministic
+select CURRENT_TIMESTAMP
+select rand()
+
+--loome funktsiooni
+create function fn_GetNameById(@id int)
+returns nvarchar(20)
+as begin
+	return (select Name from EmployeesWithDates where Id = @id)
+end
+
+--kuidas saab kasutada fn_GetNameById funktsiooni
+select dbo.fn_GetNameById(3)
+--sellega saab näha funktsiooni sisu
+sp_helptext fn_GetNameById
+
+--muuta funktsiooni fn_GetNameById ja krüpteerida see ära, 
+--et keegi teine peale sinu ei saaks seda muuta
+alter function fn_GetNameById(@id int)
+returns nvarchar(20)
+with encryption
+as begin
+	return (select Name from EmployeesWithDates where Id = @id)
+end
+--nüüd kui tahame näha fn_GetNameById funktsiooni sisu, siis ei saa
+sp_helptext fn_GetNameById
+
+
+create function fn_GetEmployeeNameById(@id int)
+returns nvarchar(20)
+with schemabinding
+as begin
+	return (select Name from EmployeesWithDates where Id = @id)
+end
+--tuleb veateade
+--Cannot schema bind function 'fn_GetEmployeeNameById' 
+--because name 'EmployeesWithDates' is invalid for schema binding. 
+--Names must be in two-part format and an object cannot 
+--reference itself.
+
+--nüüd on korras variant
+create function dbo.fn_GetEmployeeNameById123(@id int)
+returns nvarchar(20)
+with encryption, schemabinding
+as begin
+	return (select Name from dbo.EmployeesWithDates where Id = @id)
+end
+
+--mis on schemabinding?
+--schemabinding seob päringus oleva tabeli ära ja ei luba seda muuta
+--Mis see annab meile?
+--see annab meile jõudluse eelise, sest SQL Server teab, et 
+--see tabel ei muutu veergude osas
+
+--ei saa tabelit kustutada, kui sellel on schemabindinguga funktsioon
+drop table EmployeesWithDates
+
+--temporary tables
+--need on tabelid, mis on loodud ajutiselt ja kustutatakse automaatselt
+--neid on kahte tüüpi: local temporary tables ja global temporary tables
+--#-ga algavad local temporary tables ja 
+--##-ga algavad global temporary tables
+
+create table #PersonDetails(Id int, Name nvarchar(20))
+--kuhu tabel tekkis?
+insert into #PersonDetails values(1, 'Mike')
+insert into #PersonDetails values(2, 'Max')
+insert into #PersonDetails values(3, 'Uhura')
+go
+select * from #PersonDetails
+
+--saame otsida seda objekti ülesse
+select * from sysobjects
+where Name like 'dbo.#PersonDetails______________________________________________________________________________________________________000000000007%'
+
+
+--kustutame tabeli ära
+drop table #PersonDetails
+
+--teeme stored procedure, mis loob 
+--local temporary table-i ja täidab selle andmetega
+create proc spCreateLocalTempTable
+as begin
+create table #PersonDetails(Id int, Name nvarchar(20))
+
+insert into #PersonDetails values(1, 'Mike')
+insert into #PersonDetails values(2, 'Max')
+insert into #PersonDetails values(3, 'Uhura')
+
+select * from #PersonDetails
+end
+---
+exec spCreateLocalTempTable
+
+select * from sysobjects
+where Name like '[dbo].[#A895AD85]%'
+
+---globaalse tabeli loomine
+create table ##GlobalPersonDetails(Id int, Name nvarchar(20))
+--mis on globaalse ja lokaalse tabeli erinevus?
+--globaalse tabeli saab näha ja kasutada kõigis sessioonides,
+--lokaalse tabeli saab näha ja kasutada ainult selles sessioonis, 
+--kus see on loodud
+
+--index
+create table EmployeeWithSalary
+(
+Id int primary key,
+Name nvarchar(25),
+Salary int,
+Gender nvarchar(10)
+)
+
+insert into EmployeeWithSalary values(1, 'Sam', 2500, 'Male')
+insert into EmployeeWithSalary values(2, 'Pam', 6500, 'Female')
+insert into EmployeeWithSalary values(3, 'John', 4500, 'Male')
+insert into EmployeeWithSalary values(4, 'Sara', 5500, 'Female')
+insert into EmployeeWithSalary values(5, 'Todd', 3100, 'Male')
+
+select * from EmployeeWithSalary
+
+
+select * from EmployeeWithSalary
+where Salary > 4000 and Salary < 7000
+
+--loome indeksi, mis asetab palga kahanevasse järjestusse
+create index IX_Employee_Salary
+on EmployeeWithSalary(Salary desc)
+
+create index IX_Employee_Salary123
+on EmployeeWithSalary(Salary)
+where Salary > 4000 and Salary < 7000
+
+SELECT *
+FROM EmployeeWithSalary WITH (INDEX(IX_Employee_Salary123))
+WHERE Salary > 4000 AND Salary < 7000;
+--proovige nüüd pärida tabelit EmployeeWithSalary
+-- ja kasutada index-t IX_Employee_Salary
+select * from EmployeeWithSalary with (index (IX_Employee_Salary))
+
+--indeksi kustutamine
+drop index IX_Employee_Salary123 on EmployeeWithSalary
+drop index EmployeeWithSalary.IX_Employee_Salary
+
+SET STATISTICS PROFILE ON;
+
+SELECT Name, Salary
+FROM EmployeeWithSalary
+WHERE Salary > 1000 AND Salary < 5000;
+
+SET STATISTICS PROFILE OFF;
+---
+SET SHOWPLAN_ALL ON;
+go
+SELECT Name, Salary
+FROM EmployeeWithSalary
+WHERE Salary > 1000 AND Salary < 5000;
+go
+SET SHOWPLAN_ALL OFF;
+go
+
+
+---- indeksi tüübid:
+--1. Klastrites olevad
+--2. Mitte-klastris olevad
+--3. Unikaalsed
+--4. Filtreeritud
+--5. XML
+--6. Täistekst
+--7. Ruumiline
+--8. Veerusäilitav
+--9. Veergude indeksid
+--10. Välja arvatud veergudega indeksid
+
+-- klastris olev indeks määrab ära tabelis oleva füüsilise järjestuse 
+-- ja selle tulemusel saab tabelis olla ainult üks klastris olev indeks
+--kui lisad primaarvõtme, siis luuakse automaatselt klastris olev indeks
+
+create table EmployeeCity
+(
+Id int primary key,
+Name nvarchar(25),
+Salary int,
+Gender nvarchar(10),
+City nvarchar(20)
+)
+
+-- andmete õige järjestuse loovad klastris olevad indeksid 
+-- ja kasutab selleks Id nr-t
+-- põhjus, miks antud juhul kasutab Id-d, tuleneb primaarvõtmest
+insert into EmployeeCity values(3, 'John', 4500, 'Male', 'New York')
+insert into EmployeeCity values(1, 'Sam', 2500, 'Male', 'London')
+insert into EmployeeCity values(4, 'Sara', 5500, 'Female', 'Tokyo')
+insert into EmployeeCity values(5, 'Todd', 3100, 'Male', 'Toronto')
+insert into EmployeeCity values(2, 'Pam', 6500, 'Male', 'Sydney')
+
+SELECT * FROM EmployeeCity
+
+-- klastris olevad indeksid dikteerivad säilitatud andmete järjestuse tabelis 
+-- ja seda saab klastrite puhul olla ainult üks
+CREATE clustered index IX_EmployeeCity_Name
+on EmployeeCity(Name)
+--- annab veateate, et tabelis saab olla ainult üks klastris olev indeks
+--- kui soovid, uut indeksit luua, siis kustuta olemasolev
+
+--- saame luua ainult ühe klastris oleva indeksi tabeli peale
+--- klastris olev indeks on analoogne telefoni nr-le
+--- enne seda päringut kustutasime primaarvõtme indeksi ära
+SELECT * FROM EmployeeCity
+
+--mitte klastris olev indeks
+create nonclustered index IX_EmployeeCity_Name123
+on EmployeeCity(Name)
+
+exec sp_helpindex EmployeeCity
+
+SELECT * FROM EmployeeCity
+
+--- erinevused kahe indeksi vahel
+--- 1. ainult üks klastris olev indeks saab olla tabeli peale, 
+--- mitte-klastris olevaid indekseid saab olla mitu
+--- 2. klastris olevad indeksid on kiiremad kuna indeks peab 
+--- tagasi viitama tabelile
+--- Juhul, kui selekteeritud veerg ei ole olemas indeksis
+--- 3. Klastris olev indeks määratleb ära tabeli ridade slavestusjärjestuse
+--- ja ei nõua kettal lisa ruumi. Samas mitte klastris olevad indeksid on 
+--- salvestatud tabelist eraldi ja nõuab lisa ruumi
+
+create table EmployeeFirstName
+(
+	Id int primary key,
+	FirstName nvarchar(25),
+	LastName nvarchar(25),
+	Salary int,
+	Gender nvarchar(10),
+	City nvarchar(20)
+)
+
+exec sp_helpindex EmployeeFirstName
+
+--sisestame andmed tabelisse ja neid ei saa sisestada
+insert into EmployeeFirstName 
+values
+(1, 'Mike', 'Sandoz', 4500, 'Male', 'New York'),
+(1, 'John', 'Menco', 2500, 'Male', 'London')
+
+--kustutame indeksi ära
+drop index EmployeeFirstName.PK__Employee__3214EC078089B561
+--- kui käivitad ülevalpool oleva koodi, siis tuleb veateade
+--- et SQL server kasutab UNIQUE indeksit jõustamaks väärtuste unikaalsust ja primaarvõtit
+--- koodiga Unikaalseid Indekseid ei saa kustutada, aga käsitsi saab
+
+insert into EmployeeFirstName 
+values
+(1, 'Mike', 'Sandoz', 4500, 'Male', 'New York'),
+(1, 'John', 'Menco', 2500, 'Male', 'London')
+
+create unique nonclustered index IX_Employee_FirstName_FirstName
+on EmployeeFirstName(FirstName, LastName)
+
+insert into EmployeeFirstName 
+values
+(1, 'Mike', 'Sandoz', 4500, 'Male', 'New York'),
+(2, 'John', 'Menco', 2500, 'Male', 'London')
+-- alguses annab veateate, et Mike Sandoz-st on kaks korda
+-- ei saa lisada mitte-klastris olevat indeksit, kui ei ole unikaalseid andmeid
+--- kustutame tabeli ja sisestame andmed uuesti
+
+create table EmployeeFirstName
+(
+	Id int primary key,
+	FirstName nvarchar(25),
+	LastName nvarchar(25),
+	Salary int,
+	Gender nvarchar(10),
+	City nvarchar(20)
+)
+
+insert into EmployeeFirstName 
+values
+(1, 'Mike', 'Sandoz', 4500, 'Male', 'New York'),
+(2, 'John', 'Menco', 2500, 'Male', 'London')
+
+--lisame uue unikaalse piirangu
+alter table EmployeeFirstName
+add constraint UQ_Employee_FirstName_City
+unique nonclustered(City)
+
+insert into EmployeeFirstName 
+values
+(3, 'John', 'Menco', 4500, 'Male', 'London1')
+
+--rida 1334
+--tund 8
+--28.04.26
+
+--1. Vaikimisi primaarvõti loob unikaalse klastris oleva indeksi,
+-- samas unikaalne piirang
+-- loob unikaalse mitte-klastris oleva indeksi
+--2. Unikaalset indeksit või piirangut ei saa luua olemasolevasse 
+--tabelisse, kui tabel
+--juba siseldab väärtusi võtmeveerus
+--3. Vaikimisi korduvaid väärtusied ei ole veerus lubatud,
+--kui peaks olema unikaalne indeks või piirang. Nt, kui tahad
+--sisestada 10 rida andmeid,
+--millest 5 sisaldavad korduvaid andmeid, siis kõik 10 lükatakse tagasi.
+--Kui soovin ainult 5
+--rea tagasi lükkamist ja ülejäänud 5 rea sisestamist, siis
+--selleks kasutatakse IGNORE_DUP_KEY
+
+--koodinäide
+create unique index IX_EmployeeFirstName
+on EmployeeFirstName(City)
+with ignore_dup_key
+
+select * from EmployeeFirstName
+
+insert into EmployeeFirstName
+values
+(3, 'John', 'Menco', 2345, 'Male', 'London'),
+(4, 'John', 'Menco', 1234, 'Male', 'London1'),
+(4, 'John', 'Menco', 3456, 'Male', 'London1')
+--- enne ignore käsku oleks kõik kolm rida tagasi lükatud, aga
+--- nüüd läks keskmine rida läbi kuna linna nimi oli unikaalne
+
+--- view
+--- view on salvestatud SQL-i päring. Saab käsitleda ka virtuaalse tabelina
+
+select FirstName, Salary, Gender, DepartmentName
+from Employees
+join Department
+on Employees.DepartmentId = Department.Id
+
+-- view päringu esile kutsumine
+select * from vEmployeesByDepartment
+
+-- view ei salvesta andmeid vaikimisi
+-- seda tasub võtta, kui salvestatud virtuaalse tabelina
+
+-- milleks vaja:
+--saab kasutada andmebaasi skeemi keerukuse lihtsutamiseks,
+-- mitte IT-inimesele'
+-- piiratud ligipääs andmetele, ei näe kõiki veerge
+
+-- teeme view, kus näeb ainult IT-töötajaid
+-- view nimi on vItEmployeesInDepartment
+
+create view vItEmployeesInDepartment
+as
+select FirstName, salary, Gender, DepartmentName
+from Employees
+join Department
+on Employees.DepartmentId = Department.Id
+where Department.DepartmentName = 'IT'
+
+select * from vItEmployeesInDepartment
+
+-- veeru taseme turvalisus
+-- peale selecti määratled veergude näitamise ära
+create view vEmployeeInDepartmentSalaryNoShow
+as
+select FirstName, Gender, DepartmentName
+from Employees
+join Department
+on Employees.DepartmentId = Department.Id
+
+select * from vEmployeeInDepartmentSalaryNoShow
+
+select DepartmentName, COUNT(*) as [TotalEmployees]
+from vEmployeeInDepartmentSalaryNoShow
+group by DepartmentName
+
+-- saab kasutada esitlemaks koondandmeid ja üksikasjalike andmeid
+-- view, mis tagastab summeeritud andmeid
+create view vEmployeesCountByDepartment
+as
+select DepartmentName, COUNT(Employees.Id) as [TotalEmployees]
+from Employees
+join Department
+on Employees.DepartmentId = Department.Id
+group by DepartmentName
+
+
+
+select * from vEmployeesCountByDepartment
+
+--kui soovid vaatada view sisu
+sp_helptext vEmployeesCountByDepartment
+--muutmiseks kasutame sõna alter
+alter view vEmployeesCountByDepartment
+--kustutamine
+drop view vEmployeesCountByDepartment
+
+--kasutame view-d andmete uuendamiseks
+create view vEmployeesDataExceptSalary
+as
+select Id, FirstName, Gender, DepartmentId
+from Employees
+
+--muutke Id 2 olev rida ja uus eesnimi on Tom
+
+alter view vEmployeesDataExceptSalary
+
+update vEmployeesDataExceptSalary
+set FirstName = 'Tom'
+where Id = 2;
+
+select * from vEmployeesDataExceptSalary
+
+-- kustutame ja sisestame andmeid
+delete from vEmployeesDataExceptSalary where Id = 2
+
+insert into vEmployeesDataExceptSalary(Id, FirstName, Gender, DepartmentId)
+values
+(2, 'Tea', 'Female', 2)
+
+--indekseeritud view
+-- ms SQL-s on indekseeritud view name all ja
+-- Oracle-s materjaliseeritud view
+
+create table Product
+(
+Id int primary key,
+Name nvarchar(20),
+UnitPrice int
+)
+
+insert into Product values
+(1, 'Books', 20),
+(2, 'Pens', 14),
+(3, 'Pencils', 11),
+(4, 'Clips', 10)
+
+create table ProductSales
+(
+Id int,
+QuantitySold int
+)
+
+insert into ProductSales values
+(1, 10),
+(3, 23),
+(4, 21),
+(2, 12),
+(1, 13),
+(3, 12),
+(4, 13),
+(1, 11),
+(2, 12),
+(1, 14)
+
+
+-- loome view, mis annab meile veerud TotalSales ja TotalTransaction
+create view vTotalSalesByProduct
+as
+select Name, (SUM(QuantitySold) * UnitPrice) as [TotalSales], 
+count_big(Product.Id) as [TotalTransactions]
+from Product
+join ProductSales
+on Product.Id = ProductSales.Id
+group by UnitPrice, Name
+
+-- teine variant
+create view vTotalSalesByProduct
+with schemabinding
+as
+select Name,
+SUM(isnull((QuantitySold * UnitPrice), 0 )) as [TotalSales], 
+count_big(*) as [TotalTransactions]
+from dbo.ProductSales
+join dbo.Product
+on dbo.Product.Id = dbo.ProductSales.Id
+group by UnitPrice, Name
+
+select * from vTotalSalesByProduct
+
+-- kui soovid luua indeksi view sisse, siis peab järgima teatud reegleid
+--1. view tuleb luua koos schemabending-ga
+--2. kui lisafunktsioon select list viitab väljendile ja selle tulemuseks
+-- võib olla NULL, siis asendusväärtus peaks olema täpsustatud.
+-- Antud juhul kasutamine ISNULL funktsiooni asendamaks NULL väärtust
+-- 3. kui GroupBy on täpsustatud, siis view select list peab
+-- sisaldama COUNT_BIG(*) väljendit
+--4. Baastabelis peaksid view-d olema viidatud kahesosalie nimega
+-- e antud juhul dbo.Product ja dbo.ProductSales.
+-- mis erinevus on COUNT_BIG ja COUNT-i vahel?
+-- Count_big tagastab biginit väärtuse, mis on suurem
+
+create unique clustered index UIX_vTotalSalesByProduct_Name
+on vTotalSalesByProduct(Name)
+
+select * from vTotalSalesByProduct
+
+-- view piirangud
+create view vEmployeeDetails
+@Gender nvarchar(20)
+as
+select Id, FirstName, Gender, DepartmentId
+from Employees
+where Gender = @Gender
+
+--vaatesse ei saa panna parameetreid e antud juhul Gender
+
+-- kui tahame parameetreid kasutada, siis peab kasutama funktsioon
+create function fnEmployeeDetails(@Gender nvarchar(20))
+returns table
+as return
+(select Id, FirstName, Gender, DepartmentId
+from Employees where Gender = @Gender)
+
+select * from fnEmployeeDetails('male')
+
+-- order by kasutamine
+create view vEmployeeDetailsSorted
+as
+select Id, FirstName, Gender, DepartmentId
+from Employees
+order by Id
+--order by-d ei saa kasutada view sees
+
+--temp table kasutamine
+create table ##TestTempTable
+(Id int, FirstName nvarchar(20), Gender nvarchar(10))
+
+insert into ##TestTempTable values
+(101, 'Martin', 'Male'),
+(102, 'Joe', 'Male'),
+(103, 'Pam', 'Female'),
+(104, 'James', 'Male')
+
+--tehke view, mis kasutab ##TestTempTable
+--view nimi on vOnTempTable
+
+create view vOnTempTable
+as
+select Id, FirstName, Gender 
+from ##TestTempTable
+--temp tabel-s ei saa kasutada view-d
+
+-- triggerid
+
+-- DML trigger
+--- kokku on kolme tüüpi: DML, DDL ja LOGON
+
+--- trigger on stored procedure eriliik, mis automaatselt käivitub,
+--- kui mingi tegevus
+--- peaks andmebaasis aset leidma
+
+--- DML - data manipulation language
+--- DML-i põhilised käsklused: insert, update ja delete
+
+-- DML triggereid saab klassifitseerida kahte tüüpi:
+-- 1. After trigger (kutsutakse ka FOR päästikuks)
+-- 2. Instead of trigger (selmet trigger e selle asemel trigger)
+
+--- after trigger käivitub peale sündmust,
+-- kui kuskil on tehtud insert, update ja delete
+
+create table EmployeeAudit
+(
+Id int identity(1,1) primary key,
+AuditData nvarchar(1000)
+)
+
+-- peale iga töötaja sisestamist tahame teada saada töötaja Id-d,
+-- päeva ning aega(millal sisestati)
+-- kõik andmed tulevad EmployeeAudit tabelisse
+
+create trigger trEmployeeForInsert
+on Employees
+for insert
+as begin
+declare @Id int
+select @Id = Id from inserted
+insert into EmployeeAudit
+values ('New employee with Id = ' + CAST(@Id as nvarchar(5)) + ' is added at ' +
+cast(getdate() as nvarchar(20)))
+end
+
+select * from Employees
+insert into Employees values
+(11, 'Bob', 'Blob', 'Bomb', 'Male', 3000, 1, 3, 'bob@bob.com')
+
+select * from EmployeeAudit
+
+create trigger trEmployeeForDelete
+on Employees
+for delete
+as begin
+	declare @Id int
+	select @Id = Id from deleted
+
+	insert into EmployeeAudit
+	values('An existing employee with Id = ' + CAST(@Id as nvarchar(5)) +
+	' is deleted at ' + CAST(getdate() as nvarchar(20)))
+end
+
+delete from Employees where Id = 11
+
+select * from EmployeeAudit
+
+-- update trigger
+create trigger trEmployeeForUpdate
+on Employees
+for update
+as begin
+	--muutujate deklareerimine
+	declare @Id int
+	declare @OldGender nvarchar(20), @NewGender nvarchar(20)
+	declare @OldSalary int, @NewSalary int
+	declare @OldDepartmentId int, @NewDepartmentId int
+	declare @OldManagerId int, @NewManagerId int
+	declare @OldFirstName nvarchar(20), @NewFirstName nvarchar(20)
+	declare @OldMiddleName nvarchar(20), @NewMiddleName nvarchar(20)
+	declare @OldLastName nvarchar(20), @NewLastName nvarchar(20)
+	declare @OldEmail nvarchar(50), @NewEmail nvarchar(50)
+
+	--muutuja, kuhu läheb lõpptekst
+	declare @AuditString nvarchar(1000)
+
+	--laeb kõik uuendatud andmed temp tabeli alla
+	select * into #TemptTable
+	from inserted
